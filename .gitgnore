@@ -1,0 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.env/
+.env.bak/
+
+# VSCode
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test / coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# PyInstaller
+*.spec
+
+# MacOS / Linux / Windows
+.DS_Store
+Thumbs.db
