@@ -1,4 +1,4 @@
-# 🌍 Geoestatística em Python (Nome provisório da Biblioteca)
+# 🌍 Geoestatística em Python 
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange?style=for-the-badge)
