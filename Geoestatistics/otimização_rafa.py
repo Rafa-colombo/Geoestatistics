@@ -66,80 +66,80 @@ def em_tstudent_spatial(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
         
         # 1. Construção das Matrizes Espaciais 
         Rf3 = func_aux.matern_correlation(H, phi3, k)
-        Sigma = phi1 * I + phi2 * Rf3
-        
-        # OTIMIZAÇÃO: Cholesky ao invés de Inversa Direta
+        Sigma = phi1 * I + phi2 * Rf3 # Matriz de covariância -> Sigma = phi1 * I + phi2 * R(phi3)
+
+        # Cholesky 
         try:
             c, lower = la.cho_factor(Sigma)
-            Sigma_inv = la.cho_solve((c, lower), I)
+            Sigma_inv = la.cho_solve((c, lower), I) # Inversa via Cholesky -> Sigma_inv = Sigma^-1
         except la.LinAlgError:
             print(f"Aviso: Matriz instável na iteração {it}. Usando pseudo-inversa de fallback.")
-            Sigma_inv = la.pinv(Sigma)
+            Sigma_inv = la.pinv(Sigma) # Pseudo-inversa -> Sigma_inv = Sigma^+
             
-        # 2. Atualização do Beta (GLS)
-        X_invS = X.T @ Sigma_inv
-        beta_new = la.solve(X_invS @ X, X_invS @ Y)
-        
-        # 3. PASSO E: Cálculo do peso latente da t-Student (v)
-        r = Y - X @ beta_new
-        u = (r.T @ Sigma_inv @ r).item() # Distância de Mahalanobis
-        v = (gl + n) / (gl + u)          # Peso robusto
-        
+        # 2. Atualização do beta 
+        X_invS = X.T @ Sigma_inv # Produto transposto -> X_invS = X^T * Sigma^-1
+        beta_new = la.solve(X_invS @ X, X_invS @ Y) # Estimador de GLS -> beta_new = (X^T * Sigma^-1 * X)^-1 * (X^T * Sigma^-1 * Y)
+
+        # 3. Cálculo do peso latente da t-Student (v)
+        r = Y - X @ beta_new # Resíduo -> r = Y - X * beta
+        u = (r.T @ Sigma_inv @ r).item() # Distância de Mahalanobis -> u = r^T * Sigma^-1 * r
+        v = (gl + n) / (gl + u)          # Peso robusto -> v = (gl + n) / (gl + u)
+
         # 4. Derivadas Parciais (Matrizes d_phi)
-        d_phi1 = I
-        d_phi2 = Rf3
-        
+        d_phi1 = I # Derivada em relação a phi1 -> d_phi1 = d(Sigma)/d(phi1) = I
+        d_phi2 = Rf3 # Derivada em relação a phi2 -> d_phi2 = d(Sigma)/d(phi2) = Rf3
+
         # Chamando funções especiais do scipy e de func_aux
         dK_val = func_aux.dK(H, phi3, k)
         H_phi3_k1 = np.where(H > 0, (H / phi3)**(k + 1), 0)
         coef_M = 1.0 / ((2**(k - 1)) * sp.gamma(k))
-        
+
         M = k * d_phi2 + coef_M * (H_phi3_k1 * dK_val)
-        d_phi3 = phi2 * (-(1.0 / phi3) * M)
-        
+        d_phi3 = phi2 * (-(1.0 / phi3) * M) # Derivada em relação a phi3 -> d_phi3 = phi2 * [d(Rf3)/d(phi3)]
+
         # 5. PASSO M: Fisher Scoring / Gradiente
-        invS_r = Sigma_inv @ r
-        
+        invS_r = Sigma_inv @ r # Resíduo ponderado -> invS_r = Sigma^-1 * r
+
         # Vetor Score (S)
-        S1 = v * (invS_r.T @ d_phi1 @ invS_r).item()
-        S2 = v * (invS_r.T @ d_phi2 @ invS_r).item()
-        S3 = v * (invS_r.T @ d_phi3 @ invS_r).item()
+        S1 = v * (invS_r.T @ d_phi1 @ invS_r).item() # Score phi1 -> S1 = v * (r^T * Sigma^-1 * I * Sigma^-1 * r)
+        S2 = v * (invS_r.T @ d_phi2 @ invS_r).item() # Score phi2 -> S2 = v * (r^T * Sigma^-1 * Rf3 * Sigma^-1 * r)
+        S3 = v * (invS_r.T @ d_phi3 @ invS_r).item() # Score phi3 -> S3 = v * (r^T * Sigma^-1 * d_phi3 * Sigma^-1 * r)
         S = np.array([S1, S2, S3])
-        
+
         # Matriz de Informação Esperada (A)
         invS_d1 = Sigma_inv @ d_phi1
         invS_d2 = Sigma_inv @ d_phi2
         invS_d3 = Sigma_inv @ d_phi3
-        
-        a11 = np.sum(invS_d1 * invS_d1.T)
-        a12 = np.sum(invS_d1 * invS_d2.T)
-        a13 = np.sum(invS_d1 * invS_d3.T)
-        
+
+        a11 = np.sum(invS_d1 * invS_d1.T) # Elemento A11 -> a11 = tr(Sigma^-1 * d_phi1 * Sigma^-1 * d_phi1)
+        a12 = np.sum(invS_d1 * invS_d2.T) # Elemento A12 -> a12 = tr(Sigma^-1 * d_phi1 * Sigma^-1 * d_phi2)
+        a13 = np.sum(invS_d1 * invS_d3.T) # Elemento A13 -> a13 = tr(Sigma^-1 * d_phi1 * Sigma^-1 * d_phi3)
+
         a21 = np.sum(invS_d1 * (Sigma_inv @ Rf3).T)
         a22 = np.sum(invS_d2 * (Sigma_inv @ Rf3).T)
-        
+
         invS_M = Sigma_inv @ M
         a33 = np.sum(invS_M * (Sigma_inv @ (phi2 * Rf3)).T)
-        
+
         A = np.array([
             [a11, a21, 0],
             [a12, a22, 0],
             [a13, 0, a33]
         ])
-        
+
         # 6. Atualização dos Parâmetros Espaciais
-        Fi = S @ la.inv(A)
+        Fi = S @ la.inv(A) # Passo de atualização -> Fi = S * A^-1
         phi1_new = Fi[0]
         phi2_new = Fi[1]
         Tau = Fi[2]
         phi3_new = -phi2_new / Tau if Tau != 0 else phi3
-        
+
         # 7. Verificação de Convergência
         theta_old = np.concatenate([beta.flatten(), [phi1, phi2, phi3]])
         theta_new = np.concatenate([beta_new.flatten(), [phi1_new, phi2_new, phi3_new]])
-        
-        erro = np.linalg.norm(theta_old - theta_new) / np.linalg.norm(theta_old)
-        
+
+        erro = np.linalg.norm(theta_old - theta_new) / np.linalg.norm(theta_old) # Erro relativo -> erro = ||theta_old - theta_new|| / ||theta_old||
+
         # Atualiza variáveis para a próxima iteração
         beta = beta_new
         phi1, phi2, phi3 = max(1e-5, phi1_new), max(1e-5, phi2_new), max(1e-5, phi3_new)
@@ -205,6 +205,6 @@ while True:
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        #func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
+        func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
         
         break
