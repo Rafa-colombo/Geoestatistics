@@ -1,0 +1,10 @@
+# Ignora o diretório completo
+Rosangela/
+
+# Ignora o arquivo específico na raiz
+README.md
+
+# Ignora arquivos específicos dentro da pasta Geostatistic
+Geostatistic/alg_em.py
+Geostatistic/codigo_rosangela.py
+Geostatistic/main.py
