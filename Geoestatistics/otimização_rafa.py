@@ -65,7 +65,7 @@ while True:
         print("\nPulando gráfico. Prosseguindo com os chutes automáticos...")
     print("="*50)
 
-    em_resultados = EM_Matern.em_tstudent_spatial(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
+    em_resultados = EM_Matern.em_tstudent_Fischer(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
     em_resultado_NRE = EM_Matern.em_tstudent_NRExato(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
     print("\nem_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
     print("\nem_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
@@ -82,6 +82,6 @@ while True:
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        #func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
+        func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
         
         break
