@@ -10,7 +10,7 @@
 ## 📖 Sobre o Projeto
 Este projeto de pesquisa visa o desenvolvimento e a consolidação de técnicas avançadas de Geoestatística de forma nativa na linguagem de programação Python. 
 
-A iniciativa central consiste em traduzir, otimizar e organizar algoritmos geoestatísticos complexos — originados de um trabalho de tese de doutorado — transformando-os em uma nova biblioteca de código aberto. O objetivo final é criar uma ferramenta robusta, eficiente e acessível para a análise e simulação de dados espaciais, preenchendo lacunas no ecossistema Python e contribuindo diretamente para pesquisas em geologia, agronomia, ciências ambientais e engenharias.
+A iniciativa central consiste em traduzir, otimizar e organizar algoritmos geoestatísticos complexos, originados de um trabalho de tese de doutorado da **Prof. Dr. ROSANGELA APARECIDA BOTINHA ASSUMPÇÃO**, transformando-os em uma nova biblioteca de código aberto. O objetivo final é criar uma ferramenta robusta, eficiente e acessível para a análise e simulação de dados espaciais, preenchendo lacunas no ecossistema Python e contribuindo diretamente para pesquisas em geologia, agronomia, ciências ambientais e engenharias.
 
 ---
 
@@ -28,7 +28,7 @@ A construção desta biblioteca foca na precisão estatística e na otimização
 ## 🛠️ Arquitetura e Tecnologias
 O ecossistema da biblioteca está sendo desenhado para integração perfeita com as ferramentas de Data Science já consolidadas:
 * **Linguagem Principal:** Python.
-* **Validação Cruzada:** Utilização de scripts em R para verificação de baseline e garantia da precisão matemática dos resultados gerados em Python.
+* **Validação Cruzada:** Utilização de scripts para verificação de baseline e garantia da precisão matemática dos resultados gerados em Python.
 * **Computação Científica:** Dependência pesada de bibliotecas base como `NumPy` e `SciPy` para garantir a performance nos cálculos de matrizes de covariância.
 
 ---
