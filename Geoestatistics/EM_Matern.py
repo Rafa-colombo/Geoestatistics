@@ -277,3 +277,7 @@ def em_tstudent_NRExato(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
         "iteracoes": it,
         "erro_final": erro
     }
+
+
+
+    

@@ -230,3 +230,96 @@ def plot_residuo(r_inicial, r_final, r_decorr, gr):
 
     plt.suptitle('Análise da Estrutura Espacial dos Resíduos (t-Student)', fontsize=16, weight='bold', y=0.98)
     plt.show()
+
+
+def valid_cruzada(Y, Sigma, X=None):
+    """
+    Validação Cruzada Leave-One-Out (LOOCV) para modelos espaciais.
+    Equivalente à função 'kc' do R.
+    """
+    n = len(Y)
+    kcx = np.zeros((n, 3)) # Colunas: [Observado, Predito, Desvio Padrão Krigagem]
+    
+    # Se a matriz de delineamento (covariáveis) não for passada,
+    # assume-se Krigagem Ordinária (vetor coluna de 1s, modelo de média constante)
+    if X is None:
+        X = np.ones((n, 1))
+        
+    for i in range(n):
+        # 1. Ponto observado a ser deixado de fora
+        Z_i = Y[i]
+        x_i = X[i].reshape(-1, 1) # Tendência no ponto i
+        
+        # 2. Removendo o i-ésimo elemento para isolar os "vizinhos"
+        Z_menos_i = np.delete(Y, i, axis=0)
+        X_menos_i = np.delete(X, i, axis=0)
+        
+        # 3. Construindo as matrizes de covariância particionadas usando np.delete
+        # K_block: Covariância entre os vizinhos (n-1 x n-1)
+        K_block = np.delete(np.delete(Sigma, i, axis=0), i, axis=1)
+        
+        # L_block: Covariância entre o ponto isolado e seus vizinhos (n-1 x 1)
+        L_block = np.delete(Sigma[:, i], i).reshape(-1, 1)
+        
+        # 4. Montando o Sistema de Equações da Krigagem (com multiplicadores de Lagrange)
+        num_tendencias = X_menos_i.shape[1]
+        
+        # Bloco superior: [ K_block  |  X_menos_i ]
+        K_top = np.hstack([K_block, X_menos_i])
+        
+        # Bloco inferior: [ X_menos_i^T |  0 ]
+        K_bottom = np.hstack([X_menos_i.T, np.zeros((num_tendencias, num_tendencias))])
+        
+        # Sistema completo (K)
+        K_sys = np.vstack([K_top, K_bottom])
+        
+        # Vetor Lado Direito (L)
+        L_sys = np.vstack([L_block, x_i])
+        
+        # 5. Resolvendo o sistema para encontrar Pesos e Lagrange (Lamb)
+        try:
+            Lamb = la.solve(K_sys, L_sys)
+        except la.LinAlgError:
+            Lamb = la.pinv(K_sys) @ L_sys # Fallback para instabilidade numérica
+            
+        weights = Lamb[:-num_tendencias] # Pesos W
+        mu = Lamb[-num_tendencias:]      # Multiplicador de Lagrange mu
+        
+        # 6. Cálculo da Predição (Z1)
+        Z_pred = (weights.T @ Z_menos_i).item()
+        
+        # 7. Cálculo da Variância e Desvio Padrão
+        # Fórmula correta para funções Covariância: C(0) - W^T*L - mu^T*x
+        var_krig = Sigma[i, i] - (weights.T @ L_block + mu.T @ x_i).item()
+        
+        # Evita variâncias negativas minúsculas devido a arredondamento numérico
+        sd_krig = np.sqrt(max(0, var_krig)) 
+        
+        # 8. Armazenando no array final
+        kcx[i, 0] = Z_i.item()
+        kcx[i, 1] = Z_pred
+        kcx[i, 2] = sd_krig
+        
+    return kcx
+
+def relatorio_erros(kcx):
+    """
+    Reproduz o bloco final do seu código R (Estatísticas do DF e DF_std).
+    """
+    df_obs_pred = kcx[:, 0] - kcx[:, 1] # Erro Absoluto (DF)
+    df_std = df_obs_pred / kcx[:, 2]    # Erro Padronizado (DF.)
+    
+    # Criando um DataFrame do Pandas para ter o 'summary' bonito do R
+    df_erros = pd.DataFrame({
+        'Erro (DF)': df_obs_pred,
+        'Erro Padronizado (DF.)': df_std
+    })
+    
+    resumo = df_erros.describe().T # Análogo ao summary()
+    ea = np.sum(np.abs(df_obs_pred)) / len(kcx) # Seu 'EA' no R
+    
+    print("\n=== Resumo dos Erros de Validação Cruzada ===")
+    print(resumo[['min', '25%', '50%', 'mean', '75%', 'max', 'std']])
+    print(f"\nErro Absoluto Médio (EA): {ea:.4f}")
+    
+    return df_erros, resumo, ea

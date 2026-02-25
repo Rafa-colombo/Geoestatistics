@@ -77,11 +77,16 @@ while True:
         
         # Resíduo EM (Decorrelacionado)
         Sigma_final = em_resultados["Sigma"]
+
+        if(input("\nChamar Resumo dos Erros? (s/n) ").strip().lower() == 's'):
+            kcx = func_aux.valid_cruzada(Y, Sigma_final, X=X)
+            df_erros, resumo, ea = func_aux.relatorio_erros(kcx)
+            print("\nRelatório de Erros:", df_erros)
         
         # Usando Decomposição Cholesky para calcular: L^-1 * r_final (raiz quadrada inversa de Sigma). Desvio padrão espacialmente ajustado para Matriz.
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
         func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
-        
+
         break
