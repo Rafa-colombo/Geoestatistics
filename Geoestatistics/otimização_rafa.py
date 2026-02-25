@@ -159,6 +159,7 @@ def em_tstudent_spatial(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
                 "erro_final": erro
             }
 
+    print("\n=== Não Convergência ! ===")
     return {
         "beta": beta.flatten(),
         "phi1": phi1,
@@ -205,6 +206,6 @@ while True:
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
+        #func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
         
         break
