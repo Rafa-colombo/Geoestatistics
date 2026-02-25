@@ -4,46 +4,6 @@ import scipy.special as sp
 import scipy.linalg as la
 import matplotlib.pyplot as plt
 
-# =================================================================================================
-# DICIONÁRIO DE FUNÇÕES DE BIBLIOTECAS UTILIZADAS
-# =================================================================================================
-# PANDAS (pd)
-# Função pd.read_csv que lê um arquivo de dados tabular para um DataFrame -> Parametros: Caminho do arquivo, Separador, Cabeçalho (None=sem cabeçalho), Engine de processamento
-
-# NUMPY (np)
-# Função np.abs que calcula o valor absoluto elemento por elemento -> Parametros: Array de entrada
-# Função np.any que testa se algum elemento do array é avaliado como True -> Parametros: Array contendo a condição lógica
-# Função np.array que cria um array numpy a partir de uma estrutura de dados existente -> Parametros: Objeto a ser convertido (ex: lista)
-# Função np.fill_diagonal que preenche a diagonal principal de um array -> Parametros: Array multidimensional, Valor de preenchimento
-# Função np.linspace que cria uma sequência de números uniformemente espaçados -> Parametros: Onde começa, Onde termina, Quantos cortes fazer(de tamanhos iguais)
-# Função np.max que retorna o valor máximo de um array -> Parametros: Array de entrada
-# Função np.mean que calcula a média aritmética ao longo do eixo especificado -> Parametros: Array contendo os valores
-# Função np.ndim que retorna o número de dimensões de um array -> Parametros: Array a ser verificado
-# Função np.sum que calcula a soma dos elementos de um array -> Parametros: Array contendo os valores a serem somados
-# Função np.where que retorna elementos escolhidos dependendo da condição -> Parametros: Condição, Valor se verdadeiro, Valor se falso
-
-# SCIPY (sp)
-# Função sp.gamma que calcula a função Gama -> Parametros: Valor numérico a ser avaliado
-# Função sp.kv que calcula a função de Bessel modificada de segunda espécie -> Parametros: Ordem da função (k), Argumento de avaliação (uphi)
-
-# MATPLOTLIB (plt / fig)
-# Função fig.add_axes que adiciona um eixo à figura em um retângulo customizado -> Parametros: Lista com [posição_esquerda, posição_inferior, largura, altura]
-# Função fig.colorbar que adiciona uma barra de cores a um plot -> Parametros: Objeto mapeável, Eixo onde desenhar a barra de cores (cax)
-# Função plt.close que fecha janelas de figuras abertas -> Parametros: Qual janela fechar ('all' fecha todas)
-# Função plt.figure que cria uma nova figura -> Parametros: Dimensões da figura em polegadas (largura, altura)
-# Função plt.grid que configura as linhas de grade -> Parametros: Booleano para ligar/desligar, Nível de transparência (alpha)
-# Função plt.legend que insere a legenda nos eixos -> Parametros: Nenhum (usa as labels previamente definidas nas plotagens)
-# Função plt.plot que plota y em função de x como linhas e/ou marcadores -> Parametros: Valores de X, Valores de Y, Cor da linha, Espessura da linha (lw), Rótulo da legenda
-# Função plt.scatter que plota um gráfico de dispersão de y em função de x -> Parametros: Valores de X, Valores de Y, Nível de transparência/Cor/Tamanho/Ordem/Rótulo
-# Função plt.show que exibe todas as figuras abertas -> Parametros: Nenhum
-# Função plt.subplots que cria uma figura e um conjunto de subplots -> Parametros: Número de linhas, Número de colunas, Tamanho da figura, Se o eixo Y será compartilhado
-# Função plt.subplots_adjust que ajusta os parâmetros de layout dos subplots -> Parametros: Bordas esquerda/direita/superior/inferior, Espaçamento horizontal (wspace)
-# Função plt.suptitle que adiciona um título centralizado à figura inteira -> Parametros: Texto do título, Tamanho da fonte, Espessura da fonte, Posição vertical (y)
-# Função plt.title que define o título do gráfico -> Parametros: Texto do título
-# Função plt.xlabel que define o rótulo do eixo X -> Parametros: Texto do rótulo
-# Função plt.ylabel que define o rótulo do eixo Y -> Parametros: Texto do rótulo
-# Função plt.ylim que obtém ou define os limites do eixo Y atual -> Parametros: Limite inferior, Limite superior
-# =================================================================================================
 
 # Manipulação de dados
 def read_data(filename):
@@ -65,8 +25,16 @@ def read_dados_wypych(x_file, wypych_file):
     return X, Y, gr
 
 
+def exponencial_correlation(H, phi3): # Pagina 13, item a) Modelo Exponencial p(h)
+    """Calcula a correlação Exponencial para semivariograma."""
+    return np.exp(-H / phi3)
+
+def gaussiano_correlation(H, phi3): # Pagina 13, item b) Modelo Gaussiano p(h)
+    """Calcula a correlação Gaussiana para semivariograma."""
+    return np.exp(-(H / phi3)**2)
+
 # Matern
-def matern_correlation(H, phi3, k):
+def matern_correlation(H, phi3, k): # Pagina 14, item c) Modelo da familia Matérn p(h)
     """Calcula a matriz de correlação Matérn."""
     # Evitar divisão por zero na diagonal principal
     H_safe = np.where(H > 0, H, 1e-10)
@@ -138,7 +106,7 @@ def plot_analise_chutes(H, residuo, phi1, phi2, phi3, k):
     dist_flat = H.flatten()
 
     res_diff = (residuo - residuo.T)**2 # Diferença quadrática -> res_diff = (e_i - e_j)^2
-    variograma_exp = 0.5 * res_diff.flatten() # Semivariância pontual -> gamma_ij = 0.5 * (e_i - e_j)^2
+    variograma_exp = 0.5 * res_diff.flatten() # Semivariância pontual -> gamma_ij = 0.5 * (e_i - e_j)^2 -> definição clássica para cada par de pontos.
     
     num_lags = 20
     bins = np.linspace(0, np.max(H), num_lags + 1)
@@ -157,22 +125,61 @@ def plot_analise_chutes(H, residuo, phi1, phi2, phi3, k):
 
     # 2. Criar Curva Teórica
     h_teorico = np.linspace(0, np.max(H), 100) 
-    correl_teorica = matern_correlation(h_teorico, phi3, k)
-    variograma_teorico = phi1 + phi2 * (1 - correl_teorica) # Variograma Teórico -> gamma(h) = phi1 + phi2 * (1 - R(h))
+
+    # --- Modelo Matérn ---
+    correl_teorica_matern = matern_correlation(h_teorico, phi3, k)
+    variograma_matern = phi1 + phi2 * (1 - correl_teorica_matern) # Pagina 14, item c) Modelo da familia Matérn y(h)
     
-    # 3. Plotagem
-    plt.figure(figsize=(10, 5))
-    plt.scatter(dist_flat, variograma_exp, alpha=0.1, color='gray', label='Dados (Pares)')
-    plt.scatter(dist_medias, gama_medias, color='blue', s=50, zorder=3, label='Empírico (Médias)')
-    plt.plot(h_teorico, variograma_teorico, color='red', lw=2, 
-             label=f'Teórico (phi1={phi1}, phi2={phi2}, phi3={phi3}, k={k})')
+    # --- Modelo Exponencial ---
+    correl_teorica_exponencial = exponencial_correlation(h_teorico, phi3)
+    variograma_exponencial = phi1 + phi2 * (1 - correl_teorica_exponencial) # Pagina 13, item a) y(h)
     
-    plt.title("Validação Visual do Modelo Matérn")
-    plt.xlabel("Distância (h)")
-    plt.ylabel("Semivariância γ(h)")
-    plt.ylim(0, (phi1 + phi2) * 1.5)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    # --- Modelo Gaussiano ---
+    correl_teorica_gaussiana = gaussiano_correlation(h_teorico, phi3)
+    variograma_gaussiana = phi1 + phi2 * (1 - correl_teorica_gaussiana) # Pagina 13, item b) y(h)
+
+    # 3. Plotagem em painel (2x2)
+    fig, axs = plt.subplots(2, 2, figsize=(16, 10))
+    fig.suptitle(f"Comparação de Modelos Teóricos (φ1={phi1}, φ2={phi2}, φ3={phi3})", fontsize=16)
+
+    # --- Configuração base comum para todos os 4 subgráficos ---
+    for ax in axs.flat:
+        # Plot dos dados empíricos
+        ax.scatter(dist_flat, variograma_exp, alpha=0.1, color='gray', label='Dados (Pares)')
+        ax.scatter(dist_medias, gama_medias, color='black', s=50, zorder=3, label='Empírico (Médias)')
+        # Plot do patamar
+        ax.axhline(y=phi1+phi2, color='purple', linestyle=':', alpha=0.6, label=f'Patamar')
+        
+        # Configurações de eixos e grid
+        ax.set_xlabel("Distância (h)")
+        ax.set_ylabel("Semivariância γ(h)")
+        ax.set_ylim(0, (phi1 + phi2) * 1.3)
+        ax.grid(True, alpha=0.3)
+
+    # Gráfico 1: Exponencial (Top Left -> axs[0, 0])
+    axs[0, 0].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
+    axs[0, 0].set_title("Modelo Exponencial")
+    axs[0, 0].legend()
+
+    # Gráfico 2: Gaussiano (Top Right -> axs[0, 1])
+    axs[0, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
+    axs[0, 1].set_title("Modelo Gaussiano")
+    axs[0, 1].legend()
+
+    # Gráfico 3: Matérn (Bottom Left -> axs[1, 0])
+    axs[1, 0].plot(h_teorico, variograma_matern, color='red', lw=2.5, label=f'Matérn (k={k})')
+    axs[1, 0].set_title("Modelo Matérn")
+    axs[1, 0].legend()
+
+    # Gráfico 4: Todos os modelos juntos (Bottom Right -> axs[1, 1])
+    axs[1, 1].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
+    axs[1, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
+    axs[1, 1].plot(h_teorico, variograma_matern, color='red', lw=2.5, label='Matérn')
+    axs[1, 1].set_title("Comparação Conjunta")
+    axs[1, 1].legend()
+
+    # Ajusta o layout para que os títulos e legendas não fiquem sobrepostos
+    plt.tight_layout()
     plt.show()
 
 def plot_residuo(r_inicial, r_final, r_decorr, gr):
