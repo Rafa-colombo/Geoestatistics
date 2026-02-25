@@ -92,9 +92,9 @@ def ver_kappa(H, r_inicial, phi1, phi2, phi3, k):
             return phi1, phi2, phi3, k
         elif resp == 's':
             try:
-                phi1 = 0.22
-                phi2 = 0.15
-                phi3 = 110.0
+                phi1 = float(input("Novo valor para Phi1 (Nugget): "))
+                phi2 = float(input("Novo valor para Phi2 (Sill): "))
+                phi3 = float(input("Novo valor para Phi3 (Range): "))
                 k = float(input("Novo valor para Kappa: "))
                 plt.close('all') 
             except ValueError:

@@ -125,7 +125,7 @@ def em_tstudent_Fischer(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
                 "erro_final": erro
             }
 
-    print("\n=== Não Convergência ! ===")
+    print("\n=== Limite de iterações atingido sem convergência estrita! ===")
     return {
         "beta": beta.flatten(),
         "phi1": phi1,

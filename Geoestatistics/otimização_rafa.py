@@ -82,6 +82,8 @@ while True:
             kcx = func_aux.valid_cruzada(Y, Sigma_final, X=X)
             df_erros, resumo, ea = func_aux.relatorio_erros(kcx)
             print("\nRelatório de Erros:", df_erros)
+            print("\nResumo dos Erros:", resumo)
+            print("\nErro Absoluto Médio (EA):", ea)
         
         # Usando Decomposição Cholesky para calcular: L^-1 * r_final (raiz quadrada inversa de Sigma). Desvio padrão espacialmente ajustado para Matriz.
         L = la.cholesky(Sigma_final, lower=True)
