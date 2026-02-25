@@ -1,6 +1,6 @@
 """
 Otimização Iterativa com Derivadas de Ordem Superior.
-Objetivo: Estimar os parâmetros da função Matérn (phi1, phi2, phi3),
+Objetivo: Estimar os parâmetros da função Matérn (phi1, phi2, phi3), aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 """
 import numpy as np
