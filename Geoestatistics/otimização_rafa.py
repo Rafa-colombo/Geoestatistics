@@ -55,9 +55,8 @@ while True:
 
     # 3. INTERAÇÃO COM O USUÁRIO (PERGUNTA SE QUER VER O GRÁFICO)
     print( "="*50)
-    resposta_visual = input("Deseja abrir o gráfico para validar visualmente os chutes iniciais? (s/n): ").strip().lower()
-    if resposta_visual == 's':
-        phi1, phi2, phi3, k = func_aux.ver_kappa(H, r_inicial, phi1, phi2, phi3, k)
+    if (input("Deseja abrir o gráfico para validar visualmente os chutes iniciais? (s/n): ").strip().lower()) == 's':
+        phi1, phi2, phi3, k = func_aux.update_values(H, r_inicial, phi1, phi2, phi3, k)
         if k > 1:
             print("\nAtenção: Kappa > 1 pode levar a problemas de convergência devido à super-suavização. Considere usar k <= 1 para dados reais.")
             k = input("Digite um valor para Kappa (sugestão: 0.5 para fenômenos ruidosos, 1.0 para mais suaves): ")
@@ -65,8 +64,8 @@ while True:
         print("\nPulando gráfico. Prosseguindo com os chutes automáticos...")
     print("="*50)
 
-    em_resultados = EM_Matern.em_tstudent_Fischer(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
-    em_resultado_NRE = EM_Matern.em_tstudent_NRExato(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
+    em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
+    em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
     print("\nem_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
     print("\nem_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
 
@@ -79,8 +78,8 @@ while True:
         Sigma_final = em_resultados["Sigma"]
 
         if(input("\nChamar Resumo dos Erros? (s/n) ").strip().lower() == 's'):
-            kcx = func_aux.valid_cruzada(Y, Sigma_final, X=X)
-            df_erros, resumo, ea = func_aux.relatorio_erros(kcx)
+            kcx = func_aux.cross_validation(Y, Sigma_final, X=X)
+            df_erros, resumo, ea = func_aux.error_report(kcx)
             print("\nRelatório de Erros:", df_erros)
             print("\nResumo dos Erros:", resumo)
             print("\nErro Absoluto Médio (EA):", ea)
@@ -89,6 +88,7 @@ while True:
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        func_aux.plot_residuo(r_inicial, r_final, r_decorrelacionado, gr)
+        func_aux.plot_semivariogram_curves(H, r_final, em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k)
+        func_aux.plot_residuals(r_inicial, r_final, r_decorrelacionado, gr)
 
         break

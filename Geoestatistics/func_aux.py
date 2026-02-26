@@ -25,11 +25,11 @@ def read_dados_wypych(x_file, wypych_file):
     return X, Y, gr
 
 
-def exponencial_correlation(H, phi3): # Pagina 13, item a) Modelo Exponencial p(h)
+def exponential_correlation(H, phi3): # Pagina 13, item a) Modelo Exponencial p(h)
     """Calcula a correlação Exponencial para semivariograma."""
     return np.exp(-H / phi3)
 
-def gaussiano_correlation(H, phi3): # Pagina 13, item b) Modelo Gaussiano p(h)
+def gaussian_correlation(H, phi3): # Pagina 13, item b) Modelo Gaussiano p(h)
     """Calcula a correlação Gaussiana para semivariograma."""
     return np.exp(-(H / phi3)**2)
 
@@ -74,10 +74,10 @@ def dKK(H, phi3, k):
     return res
     
 
-# Funções de visualização
-def ver_kappa(H, r_inicial, phi1, phi2, phi3, k):
+# Funções de auteração de valores baseado no plot do gráfico.
+def update_values(H, r_inicial, phi1, phi2, phi3, k):
     while True:
-        plot_analise_chutes(H, r_inicial, phi1, phi2, phi3, k)
+        plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k)
         
         print("\n--- AVALIAÇÃO VISUAL ---")
         print(f"1. phi1 (Nugget) = {phi1:.4f}")
@@ -100,7 +100,7 @@ def ver_kappa(H, r_inicial, phi1, phi2, phi3, k):
             except ValueError:
                 print("Entrada inválida! Digite apenas números.")
    
-def plot_analise_chutes(H, residuo, phi1, phi2, phi3, k):
+def plot_semivariogram_curves(H, residuo, phi1, phi2, phi3, k):
     """Gera o Semivariograma Empírico vs Teórico para avaliar os chutes."""
 
     dist_flat = H.flatten()
@@ -131,11 +131,11 @@ def plot_analise_chutes(H, residuo, phi1, phi2, phi3, k):
     variograma_matern = phi1 + phi2 * (1 - correl_teorica_matern) # Pagina 14, item c) Modelo da familia Matérn y(h)
     
     # --- Modelo Exponencial ---
-    correl_teorica_exponencial = exponencial_correlation(h_teorico, phi3)
+    correl_teorica_exponencial = exponential_correlation(h_teorico, phi3)
     variograma_exponencial = phi1 + phi2 * (1 - correl_teorica_exponencial) # Pagina 13, item a) y(h)
     
     # --- Modelo Gaussiano ---
-    correl_teorica_gaussiana = gaussiano_correlation(h_teorico, phi3)
+    correl_teorica_gaussiana = gaussian_correlation(h_teorico, phi3)
     variograma_gaussiana = phi1 + phi2 * (1 - correl_teorica_gaussiana) # Pagina 13, item b) y(h)
 
     # 3. Plotagem em painel (2x2)
@@ -182,7 +182,7 @@ def plot_analise_chutes(H, residuo, phi1, phi2, phi3, k):
     plt.tight_layout()
     plt.show()
 
-def plot_residuo(r_inicial, r_final, r_decorr, gr):
+def plot_residuals(r_inicial, r_final, r_decorr, gr):
     """ VISUALIZAÇÃO ESPACIAL COMPARATIVA DOS RESÍDUOS """
 
     res_ini_flat = r_inicial.flatten()
@@ -232,7 +232,7 @@ def plot_residuo(r_inicial, r_final, r_decorr, gr):
     plt.show()
 
 
-def valid_cruzada(Y, Sigma, X=None):
+def cross_validation(Y, Sigma, X=None):
     """
     Validação Cruzada Leave-One-Out (LOOCV) para modelos espaciais.
     Equivalente à função 'kc' do R.
@@ -302,7 +302,7 @@ def valid_cruzada(Y, Sigma, X=None):
         
     return kcx
 
-def relatorio_erros(kcx):
+def error_report(kcx):
     """
     Reproduz o bloco final do seu código R (Estatísticas do DF e DF_std).
     """
