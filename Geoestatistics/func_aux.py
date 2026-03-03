@@ -11,17 +11,30 @@ def read_data(filename):
     for sep in ["\t", ",", "\s+"]:
         try:
             df = pd.read_csv(filename, sep=sep, header=None, engine="python")
-            return df
+            return df # data frame do pandas
         except:
             continue
     raise ValueError(f"Não foi possível ler o arquivo {filename}")
 
-def read_dados_wypych(x_file, wypych_file):
+def data_to_var(w_file):
     """Prepara X, Y e gr a partir dos arquivos."""
-    X = read_data(x_file).to_numpy()
-    df = read_data(wypych_file)
-    Y = df.iloc[:, 3].to_numpy().reshape(-1, 1)
+    df = read_data(w_file)
+    # 1. Identificadores (gr): indices 1 e 2
     gr = df.iloc[:, 1:3].to_numpy()
+    # 2. Resposta (Y): indice 3
+    Y = df.iloc[:, 3].to_numpy().reshape(-1, 1)
+    # 3. Covariáveis (cov): indices 4 e 5
+    cov = df.iloc[:, 4:6].to_numpy()
+
+    # 4. Construção da Matriz X (Intercepto + Covariáveis)
+    n_linhas = cov.shape[0]                  # Descobre quantas linhas os dados têm
+    coluna_uns = np.ones((n_linhas, 1))      # Cria uma coluna só com números 1
+    X = np.hstack((coluna_uns, cov))         # Junta a coluna de uns com as covariáveis
+    
+    X = np.array(X)
+    Y = np.array(Y)
+    gr = np.array(gr)
+
     return X, Y, gr
 
 
@@ -75,7 +88,7 @@ def dKK(H, phi3, k):
     
 
 # Funções de auteração de valores baseado no plot do gráfico.
-def update_values(H, r_inicial, phi1, phi2, phi3, k):
+def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
     while True:
         plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k)
         
@@ -84,18 +97,20 @@ def update_values(H, r_inicial, phi1, phi2, phi3, k):
         print(f"2. phi2 (Sill)   = {phi2:.4f}")
         print(f"3. phi3 (Range)  = {phi3:.4f}")
         print(f"4. Kappa         = {k:.4f}")
+        print(f"5. Graus de Liberdade = {gl:.4f}")
         
         resp = input("\nDeseja testar novos valores no gráfico? (s/n): ").strip().lower()
         if resp == 'n':
             plt.close('all')
             print("\nFechando gráfico e prosseguindo com a otimização...\n")
-            return phi1, phi2, phi3, k
+            return phi1, phi2, phi3, k, gl
         elif resp == 's':
             try:
                 phi1 = float(input("Novo valor para Phi1 (Nugget): "))
                 phi2 = float(input("Novo valor para Phi2 (Sill): "))
                 phi3 = float(input("Novo valor para Phi3 (Range): "))
                 k = float(input("Novo valor para Kappa: "))
+                gl = float(input("Novo valor para Graus de Liberdade: "))
                 plt.close('all') 
             except ValueError:
                 print("Entrada inválida! Digite apenas números.")
@@ -140,7 +155,7 @@ def plot_semivariogram_curves(H, residuo, phi1, phi2, phi3, k):
 
     # 3. Plotagem em painel (2x2)
     fig, axs = plt.subplots(2, 2, figsize=(16, 10))
-    fig.suptitle(f"Comparação de Modelos Teóricos (φ1={phi1}, φ2={phi2}, φ3={phi3})", fontsize=16)
+    fig.suptitle(f"Comparação de Modelos Teóricos (φ1={phi1}, φ2={phi2}, φ3={phi3})", fontsize=15)
 
     # --- Configuração base comum para todos os 4 subgráficos ---
     for ax in axs.flat:
@@ -323,3 +338,40 @@ def error_report(kcx):
     print(f"\nErro Absoluto Médio (EA): {ea:.4f}")
     
     return df_erros, resumo, ea
+
+def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
+    """
+    Aciona o menu interativo de diagnóstico do modelo.
+    Calcula resíduos marginais e decorrelacionados, exibe erros de validação e plota gráficos finais.
+    """
+    
+    if input("\nDeseja visualizar os resíduos? (s/n) ").strip().lower() == 's':
+        # Resíduo EM (Marginal)
+        beta_final = em_resultados["beta"].reshape(-1, 1)
+        r_final = Y - X @ beta_final
+        
+        # Matriz de Covariância
+        Sigma_final = em_resultados["Sigma"]
+
+        # Resumo de Erros (Opcional)
+        if input("\nChamar Resumo dos Erros? (s/n) ").strip().lower() == 's':
+            kcx = cross_validation(Y, Sigma_final, X=X)
+            df_erros, resumo, ea = func_aux.error_report(kcx)
+            print("\nRelatório de Erros:\n", df_erros)
+            print("\nResumo dos Erros:\n", resumo)
+            print("\nErro Absoluto Médio (EA):", ea)
+        
+        # Usando Decomposição Cholesky para calcular: L^-1 * r_final (raiz quadrada inversa de Sigma). Desvio padrão espacialmente ajustado para Matriz.
+        L = la.cholesky(Sigma_final, lower=True)
+        r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
+        
+        func_aux.plot_semivariogram_curves(
+            H, r_final, 
+            em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k
+        )
+        
+        plot_residuals(r_inicial, r_final, r_decorrelacionado, gr)
+        
+        return
+
+    return

@@ -16,14 +16,10 @@ import EM_Matern
 # =====================================================================
 # 1. LEITURA DOS DADOS
 # =====================================================================
-x_file = "X.txt"
-wypych_file = "Dados_Wypych.txt"
+# x_file = "X.txt" # retirar 1's e covariaveis (respectivamente colunas 1, 2, 3) trabalhar so com w_file
+w_file = "dados_exp.txt"# retirar gr's e Y (respectivamente colunas 1, 2, 3); retirar covariaveis (colunas 4 e 5) -> começando do 0
 
-X, Y, gr = func_aux.read_dados_wypych(x_file, wypych_file)
-
-X = np.array(X)
-Y = np.array(Y)
-gr = np.array(gr)
+X, Y, gr = func_aux.data_to_var(w_file) # Ao passar os dados, certifique-se de que indice 0 exista(ele sera ignorado). Ordem: gr (1 e 2), Y (3), covariaveis (4 e 5). 
 
 if Y.ndim == 1:
     Y = Y.reshape(-1, 1)
@@ -31,7 +27,10 @@ if Y.ndim == 1:
 n = gr.shape[0]
 I = np.identity(n)
 
-
+print("\nDados carregados com sucesso. Dimensões: X =", X.shape, ", Y =", Y.shape, ", gr =", gr.shape)
+print("Primeiras 5 linhas de X:\n", X[:5])
+print("Primeiras 5 linhas de Y:\n", Y[:5])
+print("Primeiras 5 linhas de gr:\n", gr[:5])
 # =====================================================================
 # 2. CONFIGURAÇÃO INICIAL E MATRIZ DE DISTÂNCIAS
 # =====================================================================
@@ -44,6 +43,7 @@ phi1 = 0.22
 phi2 = 0.15  
 phi3 = 110.0 
 k = 0.5      
+gl = 4
 
 # =====================================================================
 # 3. EXECUÇÃO PRINCIPAL
@@ -56,7 +56,7 @@ while True:
     # 3. INTERAÇÃO COM O USUÁRIO (PERGUNTA SE QUER VER O GRÁFICO)
     print( "="*50)
     if (input("Deseja abrir o gráfico para validar visualmente os chutes iniciais? (s/n): ").strip().lower()) == 's':
-        phi1, phi2, phi3, k = func_aux.update_values(H, r_inicial, phi1, phi2, phi3, k)
+        phi1, phi2, phi3, k, gl = func_aux.update_values(H, r_inicial, phi1, phi2, phi3, k, gl)
         if k > 1:
             print("\nAtenção: Kappa > 1 pode levar a problemas de convergência devido à super-suavização. Considere usar k <= 1 para dados reais.")
             k = input("Digite um valor para Kappa (sugestão: 0.5 para fenômenos ruidosos, 1.0 para mais suaves): ")
@@ -64,31 +64,12 @@ while True:
         print("\nPulando gráfico. Prosseguindo com os chutes automáticos...")
     print("="*50)
 
-    em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
-    em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k)
+    em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k, gl=gl)
+    em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, theta_init=[*beta_ols.flatten(), phi1, phi2, phi3], H=H, k=k, gl=gl)
     print("\nem_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
     print("\nem_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
 
-    if input("\nDeseja visualizar os resíduos e finalizar loop? (s/n) ").strip().lower() == 's':
-        # Resíduo EM (Marginal)
-        beta_final = em_resultados["beta"].reshape(-1, 1)
-        r_final = Y - X @ beta_final
-        
-        # Resíduo EM (Decorrelacionado)
-        Sigma_final = em_resultados["Sigma"]
+    func_aux.interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k)
 
-        if(input("\nChamar Resumo dos Erros? (s/n) ").strip().lower() == 's'):
-            kcx = func_aux.cross_validation(Y, Sigma_final, X=X)
-            df_erros, resumo, ea = func_aux.error_report(kcx)
-            print("\nRelatório de Erros:", df_erros)
-            print("\nResumo dos Erros:", resumo)
-            print("\nErro Absoluto Médio (EA):", ea)
-        
-        # Usando Decomposição Cholesky para calcular: L^-1 * r_final (raiz quadrada inversa de Sigma). Desvio padrão espacialmente ajustado para Matriz.
-        L = la.cholesky(Sigma_final, lower=True)
-        r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
-        
-        func_aux.plot_semivariogram_curves(H, r_final, em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k)
-        func_aux.plot_residuals(r_inicial, r_final, r_decorrelacionado, gr)
-
+    if input("Deseja finalizar loop? (s/n) ").strip().lower() == 's':
         break

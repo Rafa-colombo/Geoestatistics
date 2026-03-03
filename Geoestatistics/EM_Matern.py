@@ -9,7 +9,7 @@ import func_aux
 # 3. ALGORITMO EM (t-Student Espacial)
 # =====================================================================
 
-def fit_tstudent_fisher(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4):
+def fit_tstudent_fisher(X, Y, gr, theta_init, H, k, gl, max_iter=100, tol=1e-4):
     """
     Estimação de parâmetros espaciais robustos (t-Student) via Algoritmo EM.
     Passo Fischer Scoring para atualização de phi1 e phi2, e Newton 1D para phi3. (Utização de dK penas) -> Para NR exato, seria necessário dKK na aplicação.
@@ -21,7 +21,7 @@ def fit_tstudent_fisher(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
     n = len(Y)
     I = np.eye(n)
     
-    print("Iniciando otimização EM (t-Student)...\nValores iniciais: beta (OLS), k, phi1,2 e 3 =", beta.flatten(), k, phi1, phi2, phi3)
+    print("Iniciando otimização EM (t-Student)...\nValores iniciais: beta (OLS), k, phi1,2 e 3 e gl =", beta.flatten(), k, phi1, phi2, phi3, gl)
     
     for it in range(1, max_iter + 1):
         
@@ -141,7 +141,7 @@ def fit_tstudent_fisher(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4
 # 3. ALGORITMO EM (t-Student) com Newton-Raphson EXATO para phi3
 # =====================================================================
 
-def fit_tstudent_exact_nr(X, Y, gr, theta_init, H, k, gl=4, max_iter=100, tol=1e-4):
+def fit_tstudent_exact_nr(X, Y, gr, theta_init, H, k, gl, max_iter=100, tol=1e-4):
     """
     Estimação de parâmetros espaciais robustos (t-Student) via Algoritmo EM.
     Utiliza Fisher Scoring para phi1 e phi2, e Newton-Raphson exato para phi3.
