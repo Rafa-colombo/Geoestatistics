@@ -16,7 +16,7 @@ import EM_Matern
 # =====================================================================
 # 1. LEITURA DOS DADOS
 # =====================================================================
-# x_file = "X.txt" # retirar 1's e covariaveis (respectivamente colunas 1, 2, 3) trabalhar so com w_file
+
 w_file = "dados_exp.txt"# retirar gr's e Y (respectivamente colunas 1, 2, 3); retirar covariaveis (colunas 4 e 5) -> começando do 0
 
 X, Y, gr = func_aux.data_to_var(w_file) # Ao passar os dados, certifique-se de que indice 0 exista(ele sera ignorado). Ordem: gr (1 e 2), Y (3), covariaveis (4 e 5). 

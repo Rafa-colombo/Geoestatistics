@@ -354,9 +354,9 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
         Sigma_final = em_resultados["Sigma"]
 
         # Resumo de Erros (Opcional)
-        if input("\nChamar Resumo dos Erros? (s/n) ").strip().lower() == 's':
+        if input("Chamar Resumo dos Erros? (s/n) ").strip().lower() == 's':
             kcx = cross_validation(Y, Sigma_final, X=X)
-            df_erros, resumo, ea = func_aux.error_report(kcx)
+            df_erros, resumo, ea = error_report(kcx)
             print("\nRelatório de Erros:\n", df_erros)
             print("\nResumo dos Erros:\n", resumo)
             print("\nErro Absoluto Médio (EA):", ea)
@@ -365,7 +365,7 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        func_aux.plot_semivariogram_curves(
+        plot_semivariogram_curves(
             H, r_final, 
             em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k
         )
