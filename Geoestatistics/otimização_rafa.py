@@ -18,7 +18,8 @@ import func_aux
 w_file = "dados_exp.txt"
 X, Y, gr = func_aux.read_dados_exp(w_file)
 
-
+n = gr.shape[0]
+I = np.identity(n)
 # =====================================================================
 # 2. CONFIGURAÇÃO INICIAL E MATRIZ DE DISTÂNCIAS
 # =====================================================================
@@ -177,7 +178,7 @@ while True:
     print( "="*50)
     resposta_visual = input("Deseja abrir o gráfico para validar visualmente os chutes iniciais? (s/n): ").strip().lower()
     if resposta_visual == 's':
-        phi1, phi2, phi3, k = func_aux.ver_kappa(H, r_inicial, phi1, phi2, phi3, k)
+        phi1, phi2, phi3, k, gl = func_aux.ver_kappa(H, r_inicial, phi1, phi2, phi3, k, gl)
         if k > 1:
             print("\nAtenção: Kappa > 1 pode levar a problemas de convergência devido à super-suavização. Considere usar k <= 1 para dados reais.")
             k = float(input("Digite um valor para Kappa (sugestão: 0.5 para fenômenos ruidosos, 1.0 para mais suaves): "))

@@ -87,7 +87,7 @@ def dKK(H, phi3, k):
     
 
 # Funções de visualização
-def ver_kappa(H, r_inicial, phi1, phi2, phi3, k):
+def ver_kappa(H, r_inicial, phi1, phi2, phi3, k, gl):
     while True:
         plot_analise_chutes(H, r_inicial, phi1, phi2, phi3, k)
         
@@ -96,18 +96,20 @@ def ver_kappa(H, r_inicial, phi1, phi2, phi3, k):
         print(f"2. phi2 (Sill)   = {phi2:.4f}")
         print(f"3. phi3 (Range)  = {phi3:.4f}")
         print(f"4. Kappa         = {k:.4f}")
+        print(f"5. Graus de Liberdade = {gl:.4f}")
         
         resp = input("\nDeseja testar novos valores no gráfico? (s/n): ").strip().lower()
         if resp == 'n':
             plt.close('all')
             print("\nFechando gráfico e prosseguindo com a otimização...\n")
-            return phi1, phi2, phi3, k
+            return phi1, phi2, phi3, k, gl
         elif resp == 's':
             try:
                 phi1 = 0.22
                 phi2 = 0.15
                 phi3 = 110.0
                 k = float(input("Novo valor para Kappa: "))
+                gl = float(input("Novo valor para Graus de Liberdade: "))
                 plt.close('all') 
             except ValueError:
                 print("Entrada inválida! Digite apenas números.")
