@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.linalg as la
 import scipy.special as sp
-import func_aux 
+import util 
 
 # Ambas funções são bem semelhantes, mudando apenas a forma de atualização de phi3 (Fisher Scoring isolado vs Newton-Raphson exato).
 
@@ -40,16 +40,16 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
         beta = np.array(theta_init[:-3]).reshape(-1, 1)
         r_inicial = Y - X @ beta
         phi1, phi2, phi3 = theta_init[-3:]
-        func_aux.plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k) # Gráfico para validar e atualizar chutes iniciais
+        util.plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k) # Gráfico para validar e atualizar chutes iniciais
         if (input("Deseja trocar os chutes iniciais? (0/1): ") == '1'):
-            phi1, phi2, phi3, k, gl = func_aux.update_values(H, r_inicial, phi1, phi2, phi3, k, gl)
-        print(f"[theta_init] | beta = {beta_new.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
+            phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial, phi1, phi2, phi3, k, gl)
+        print(f"[theta_init] | beta = {beta.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
     elif beta_ols is not None: # Caso contrário, usa chutes padrão para phi's e beta ols normal
         beta = np.array(beta_ols.flatten()).reshape(-1, 1)  # Beta_ols
         r_inicial = Y - X @ beta
         phi1, phi2, phi3 = standard_values_em(Y, k, gl)
-        phi1, phi2, phi3, k, gl = func_aux.update_values(H, r_inicial, phi1, phi2, phi3, k, gl) # Gráfico para validar e atualizar chutes iniciais
-        print(f"[beta_ols] | beta = {beta_new.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
+        phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial, phi1, phi2, phi3, k, gl) # Gráfico para validar e atualizar chutes iniciais
+        print(f"[beta_ols] | beta = {beta.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
     else:
         raise ValueError("Parâmetros insuficientes. Forneça theta_init completo ou beta_ols para chutes automáticos.")
 
@@ -61,7 +61,7 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
     for it in range(1, max_iter + 1):
         
         # 1. Construção das Matrizes Espaciais 
-        Rf3 = func_aux.matern_correlation(H, phi3, k)
+        Rf3 = util.matern_correlation(H, phi3, k)
         Sigma = phi1 * I + phi2 * Rf3 # Matriz de covariância -> Sigma = phi1 * I + phi2 * R(phi3)
 
         # Cholesky 
@@ -85,8 +85,8 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
         d_phi1 = I # Derivada em relação a phi1 -> d_phi1 = d(Sigma)/d(phi1) = I
         d_phi2 = Rf3 # Derivada em relação a phi2 -> d_phi2 = d(Sigma)/d(phi2) = Rf3
 
-        # Chamando funções especiais do scipy e de func_aux
-        dK_val = func_aux.dK(H, phi3, k)
+        # Chamando funções especiais do scipy e de util
+        dK_val = util.dK(H, phi3, k)
         H_phi3_k1 = np.where(H > 0, (H / phi3)**(k + 1), 0)
         coef_M = 1.0 / ((2**(k - 1)) * sp.gamma(k))
 
@@ -202,7 +202,7 @@ def fit_tstudent_exact_nr(X, Y, gr, H, k=0.5, gl=4, theta_init=None, max_iter=10
     for it in range(1, max_iter + 1):
         
         # 1. Construção das Matrizes Espaciais 
-        Rf3 = func_aux.matern_correlation(H, phi3, k)
+        Rf3 = util.matern_correlation(H, phi3, k)
         Sigma = phi1 * I + phi2 * Rf3 
 
         # Cholesky para inversão eficiente e estável
@@ -227,8 +227,8 @@ def fit_tstudent_exact_nr(X, Y, gr, H, k=0.5, gl=4, theta_init=None, max_iter=10
         d_phi2 = Rf3 
 
         # Chamando funções especiais de func_aux
-        dK_val = func_aux.dK(H, phi3, k)
-        dKK_val = func_aux.dKK(H, phi3, k)
+        dK_val = util.dK(H, phi3, k)
+        dKK_val = util.dKK(H, phi3, k)
 
         uphi = np.where(H > 0, H / phi3, 0)
         H_phi3_k1 = np.where(H > 0, uphi**(k + 1), 0)
