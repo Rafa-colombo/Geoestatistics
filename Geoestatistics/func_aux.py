@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import scipy.special as sp
 import scipy.linalg as la
+import scipy.spatial.distance as sp_dist
 import matplotlib.pyplot as plt
 
 
@@ -17,13 +18,19 @@ def read_data(filename):
     raise ValueError(f"Não foi possível ler o arquivo {filename}")
 
 def data_to_var(w_file):
-    """Prepara X, Y e gr a partir dos arquivos."""
-    df = read_data(w_file)
-    # 1. Identificadores (gr): indices 1 e 2
+    """ Migrando tudo que abstrai dos dados diretos para essa função:
+    - gr: coordenadas (indices 1 e 2)
+    - Y: resposta (indices 3)
+    - cov: covariáveis (indices 4 e 5)
+    - X: matriz de delineamento (coluna de 1s + covariáveis)
+    - H: matriz de distâncias entre os pontos (scipy.spatial.distance.cdist)
+    - beta_ols: estimativa OLS para os parâmetros de tendência
+    - r_inicial: resíduo inicial (Y - X @ beta_ols)
+    """
+
+    df = read_data(w_file) # data frame
     gr = df.iloc[:, 1:3].to_numpy()
-    # 2. Resposta (Y): indice 3
     Y = df.iloc[:, 3].to_numpy().reshape(-1, 1)
-    # 3. Covariáveis (cov): indices 4 e 5
     cov = df.iloc[:, 4:6].to_numpy()
 
     # 4. Construção da Matriz X (Intercepto + Covariáveis)
@@ -34,8 +41,13 @@ def data_to_var(w_file):
     X = np.array(X)
     Y = np.array(Y)
     gr = np.array(gr)
+    H = sp_dist.cdist(gr, gr) # Matriz de distâncias entre os pontos (scipy.spatial.distance.cdist)
 
-    return X, Y, gr
+    # Cálculo do Resíduo Inicial (OLS) -> parametros para o gráfico de semivariograma
+    beta_ols = np.linalg.solve(X.T @ X, X.T @ Y) # Estimador OLS clássico -> beta_ols = (X^T * X)^-1 * (X^T * Y)
+    r_inicial = Y - X @ beta_ols # r = Real (Y) - Previsto (X * beta)
+
+    return X, Y, gr, H, beta_ols, r_inicial
 
 
 def exponential_correlation(H, phi3): # Pagina 13, item a) Modelo Exponencial p(h)
@@ -90,7 +102,6 @@ def dKK(H, phi3, k):
 # Funções de auteração de valores baseado no plot do gráfico.
 def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
     while True:
-        plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k)
         
         print("\n--- AVALIAÇÃO VISUAL ---")
         print(f"1. phi1 (Nugget) = {phi1:.4f}")
@@ -99,12 +110,12 @@ def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
         print(f"4. Kappa         = {k:.4f}")
         print(f"5. Graus de Liberdade = {gl:.4f}")
         
-        resp = input("\nDeseja testar novos valores no gráfico? (s/n): ").strip().lower()
-        if resp == 'n':
+        resp = input("\nDeseja testar novos valores no gráfico? (0/1): ")
+        if resp == '0':
             plt.close('all')
-            print("\nFechando gráfico e prosseguindo com a otimização...\n")
+            print("\nProsseguindo com a otimização...\n")
             return phi1, phi2, phi3, k, gl
-        elif resp == 's':
+        elif resp == '1':
             try:
                 phi1 = float(input("Novo valor para Phi1 (Nugget): "))
                 phi2 = float(input("Novo valor para Phi2 (Sill): "))
@@ -112,15 +123,16 @@ def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
                 k = float(input("Novo valor para Kappa: "))
                 gl = float(input("Novo valor para Graus de Liberdade: "))
                 plt.close('all') 
+                plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k)
             except ValueError:
                 print("Entrada inválida! Digite apenas números.")
    
-def plot_semivariogram_curves(H, residuo, phi1, phi2, phi3, k):
+def plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k):
     """Gera o Semivariograma Empírico vs Teórico para avaliar os chutes."""
 
     dist_flat = H.flatten()
 
-    res_diff = (residuo - residuo.T)**2 # Diferença quadrática -> res_diff = (e_i - e_j)^2
+    res_diff = (r_inicial - r_inicial.T)**2 # Diferença quadrática -> res_diff = (e_i - e_j)^2
     variograma_exp = 0.5 * res_diff.flatten() # Semivariância pontual -> gamma_ij = 0.5 * (e_i - e_j)^2 -> definição clássica para cada par de pontos.
     
     num_lags = 20
@@ -345,7 +357,7 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
     Calcula resíduos marginais e decorrelacionados, exibe erros de validação e plota gráficos finais.
     """
     
-    if input("\nDeseja visualizar os resíduos? (s/n) ").strip().lower() == 's':
+    if input("\nDeseja visualizar os gráficos? (0/1) ") == '1':
         # Resíduo EM (Marginal)
         beta_final = em_resultados["beta"].reshape(-1, 1)
         r_final = Y - X @ beta_final
@@ -354,7 +366,7 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
         Sigma_final = em_resultados["Sigma"]
 
         # Resumo de Erros (Opcional)
-        if input("Chamar Resumo dos Erros? (s/n) ").strip().lower() == 's':
+        if input("Chamar Resumo dos Erros? (0/1) ") == '1':
             kcx = cross_validation(Y, Sigma_final, X=X)
             df_erros, resumo, ea = error_report(kcx)
             print("\nRelatório de Erros:\n", df_erros)
