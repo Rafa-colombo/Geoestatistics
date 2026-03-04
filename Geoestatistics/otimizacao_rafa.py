@@ -3,20 +3,16 @@ Otimização Iterativa com Derivadas de Ordem Superior.
 Objetivo: Estimar os parâmetros da função Matérn (phi1, phi2, phi3),
 
 """
-import numpy as np
-import scipy.spatial.distance as sp_dist
-
-import util
+from util import data_to_var, interactive_stats_view
 import EM_Matern
 
 # =====================================================================
 # 1. LEITURA DOS DADOS
 # =====================================================================
 
-w_file = "dados_exp.txt"# retirar gr's e Y (respectivamente colunas 1, 2, 3); retirar covariaveis (colunas 4 e 5) -> começando do indice 0
+w_file = "dados_exp.txt"
 
-# Ao passar os dados, certifique-se de que indice 0 exista(ele sera ignorado). Ordem: gr (1 e 2), Y (3), covariaveis (4 e 5). 
-X, Y, gr, H, beta_ols, r_inicial = util.data_to_var(w_file) 
+X, Y, gr, H, beta_ols, r_inicial = data_to_var(w_file) # Caso queira passar os dados sem a coluna de índice, use data_to_var(w_file, ind_0=False)
 
 print("\nDados carregados com sucesso. Dimensões: X =", X.shape, ", Y =", Y.shape, ", gr =", gr.shape)
 print("Primeiras 5 linhas de X:\n", X[:5])
@@ -44,11 +40,13 @@ while True:
 
     # em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, theta_init=theta_init)
     em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols)
+    em_resultados_comOtimizacao = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols, gl_optimize=True)
     em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, H, k, gl, theta_init=theta_init)
-    print("\nem_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
-    print("\nem_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
+    print("em_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
+    print("em_resultados_comOtimizacao['phis'] =", em_resultados_comOtimizacao["phi1"], em_resultados_comOtimizacao["phi2"], em_resultados_comOtimizacao["phi3"])
+    print("em_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
 
-    util.interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k)
+    interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k)
 
     if input("Deseja finalizar loop? (0/1) ")== '1':
         break

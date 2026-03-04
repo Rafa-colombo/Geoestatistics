@@ -30,7 +30,7 @@ def standard_values_em(Y, k, gl, phi1=None, phi2=None, phi3=None):
     
     # ... resto do código ...
 
-def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None, max_iter=100, tol=1e-4):
+def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None, max_iter=100, tol=5e-4, gl_optimize=False):
     """
     Estimação de parâmetros espaciais robustos (t-Student) via Algoritmo EM.
     Passo Fischer Scoring para atualização de phi1 e phi2, e Newton 1D para phi3. (Utização de dK penas) -> Para NR exato, seria necessário dKK na aplicação.
@@ -80,6 +80,12 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
         r = Y - X @ beta_new # Resíduo -> r = Y - X * beta
         u = (r.T @ Sigma_inv @ r).item() # Distância de Mahalanobis -> u = r^T * Sigma^-1 * r
         v = (gl + n) / (gl + u)          # Peso robusto -> v = (gl + n) / (gl + u)
+
+        # Teste de função de otimização de gl
+        if gl_optimize:
+            gl = util.gl_optmizer(gl, n, v)
+        else:
+            pass # Mantém o gl fixo 
 
         # 4. Derivadas Parciais (Matrizes d_phi)
         d_phi1 = I # Derivada em relação a phi1 -> d_phi1 = d(Sigma)/d(phi1) = I
@@ -155,7 +161,7 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
         phi1, phi2, phi3 = max(1e-5, phi1_new), max(1e-5, phi2_new), max(1e-5, phi3_new)
         
         if it == 1 or it % 5 == 0 or erro < tol:
-            print(f"Iter {it}: Erro = {erro:.6f} | beta = {beta_new.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
+            print(f"Iter {it}: Erro = {erro:.6f} | beta = {beta_new.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f} | gl = {gl:.4f}")
             
         if erro < tol:
             print(f"\n=== Convergência atingida em {it} iterações! ===")
@@ -169,7 +175,7 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
                 "erro_final": erro
             }
 
-    print("\n=== Limite de iterações atingido sem convergência estrita! ===")
+    print("\n=== Limite de iterações atingido sem convergência! ===")
     return {
         "beta": beta.flatten(),
         "phi1": phi1,

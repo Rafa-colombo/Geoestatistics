@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import scipy.special as sp
 import scipy.linalg as la
+import scipy.optimize as opt
 import scipy.spatial.distance as sp_dist
 import matplotlib.pyplot as plt
 
 
-# Manipulação de dados
 def read_data(filename):
     """Lê arquivo tentando diferentes separadores."""
     for sep in ["\t", ",", "\s+"]:
@@ -17,7 +17,7 @@ def read_data(filename):
             continue
     raise ValueError(f"Não foi possível ler o arquivo {filename}")
 
-def data_to_var(w_file):
+def data_to_var(w_file, ind_0=True):
     """ Migrando tudo que abstrai dos dados diretos para essa função:
     - gr: coordenadas (indices 1 e 2)
     - Y: resposta (indices 3)
@@ -27,11 +27,16 @@ def data_to_var(w_file):
     - beta_ols: estimativa OLS para os parâmetros de tendência
     - r_inicial: resíduo inicial (Y - X @ beta_ols)
     """
-
     df = read_data(w_file) # data frame
-    gr = df.iloc[:, 1:3].to_numpy()
-    Y = df.iloc[:, 3].to_numpy().reshape(-1, 1)
-    cov = df.iloc[:, 4:6].to_numpy()
+
+    if ind_0:
+        gr = df.iloc[:, 1:3].to_numpy() # Coordenadas (colunas 1 e 2)
+        Y = df.iloc[:, 3].to_numpy().reshape(-1, 1) # Resposta (coluna 3)
+        cov = df.iloc[:, 4:6].to_numpy() # Covariáveis (colunas 4 e 5)
+    else: # Se os dados já vierem sem a coluna de índice (começando do indice 0)
+        gr = df.iloc[:, 0:2].to_numpy() # Coordenadas (colunas 0 e 1)
+        Y = df.iloc[:, 2].to_numpy().reshape(-1, 1) # Resposta (coluna 2)
+        cov = df.iloc[:, 3:5].to_numpy() # Covariáveis (colunas 3 e 4)
 
     # 4. Construção da Matriz X (Intercepto + Covariáveis)
     n_linhas = cov.shape[0]                  # Descobre quantas linhas os dados têm
@@ -58,7 +63,6 @@ def gaussian_correlation(H, phi3): # Pagina 13, item b) Modelo Gaussiano p(h)
     """Calcula a correlação Gaussiana para semivariograma."""
     return np.exp(-(H / phi3)**2)
 
-# Matern
 def matern_correlation(H, phi3, k): # Pagina 14, item c) Modelo da familia Matérn p(h)
     """Calcula a matriz de correlação Matérn."""
     # Evitar divisão por zero na diagonal principal
@@ -79,7 +83,6 @@ def matern_correlation(H, phi3, k): # Pagina 14, item c) Modelo da familia Maté
     return res
 
 
-# Derivadas de K_kappa
 def dK(H, phi3, k):
     """1ª Derivada de K_kappa em relação a u"""
     H_safe = np.where(H == 0, 1e-10, H)
@@ -99,8 +102,10 @@ def dKK(H, phi3, k):
     return res
     
 
-# Funções de auteração de valores baseado no plot do gráfico.
 def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
+    """
+    Funções de auteração de valores baseado no plot do gráfico.
+    """
     while True:
         
         print("\n--- AVALIAÇÃO VISUAL ---")
@@ -387,3 +392,29 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
         return
 
     return
+
+
+def gl_optmizer(gl_atual, n, v):
+    """
+     Possivel otimização para os graus de liberdade (gl) na t-Student Multivariada.
+    """
+    # 1. Cálculo da esperança do log(v) 
+    E_ln_v = sp.digamma((gl_atual + n) / 2.0) - np.log((gl_atual + n) / 2.0) + np.log(v) # E[ln(v)] = digamma((gl + n)/2) - ln((gl + n)/2) + ln(v)
+    
+    # 2. Calcula log-verossimilhança assumindo Gamma(v/2, v/2)
+    def custo_gl(nu):
+        termo1 = (nu / 2.0) * np.log(nu / 2.0) # const normalização -> (nu/2) * ln(nu/2)
+        termo2 = -sp.gammaln(nu / 2.0) # denominador da constante de normalização -> -ln(Gamma(nu/2))
+        termo3 = (nu / 2.0 - 1.0) * E_ln_v # interação da "forma" da distribuição v -> (nu/2 - 1) * E[ln(v)]
+        termo4 = -(nu / 2.0) * v # decaimento exponencial característico da distribuição Gama 
+        
+        # Retorna negativo porque queremos maximizar a verossimilhança (opt minimiza por padrão)
+        return -(termo1 + termo2 + termo3 + termo4)
+
+    # 3. Entrega dos termos para a função de otimização (usando método 'bounded' para garantir que gl seja positivo e razoável)
+    resultado = opt.minimize_scalar(custo_gl, bounds=(2.1, 100.0), method='bounded') # bounds sao os limites para gl
+    
+    if resultado.success:
+        return resultado.x # Retorna o novo gl otimizado
+    else:
+        return gl_atual # Se falhar, mantém o gl antigo por segurança
