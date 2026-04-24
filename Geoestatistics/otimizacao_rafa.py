@@ -38,11 +38,11 @@ while True:
 
     print("="*50)
 
-    # em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, theta_init=theta_init)
-    em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols)
-    em_resultados_comOtimizacao = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols, gl_optimize=True)
-    em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, H, k, gl, theta_init=theta_init)
-    print("em_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
+    # em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, theta_init=theta_init) # teste com chutes iniciais theta_init
+    # em_resultados = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols) # teste sem gl otimização sem chutes iniciais, apenas beta_ols
+    em_resultados_comOtimizacao = EM_Matern.fit_tstudent_fisher(X, Y, gr, H, k, gl, beta_ols=beta_ols, gl_optimize=True) # teste com otimização de gl, sem chutes iniciais, apenas beta_ols
+    em_resultado_NRE = EM_Matern.fit_tstudent_exact_nr(X, Y, gr, H, k, gl, theta_init=theta_init) # testes com NR e chutes iniciais theta_init
+    # print("em_resultados['phis'] =", em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"])
     print("em_resultados_comOtimizacao['phis'] =", em_resultados_comOtimizacao["phi1"], em_resultados_comOtimizacao["phi2"], em_resultados_comOtimizacao["phi3"])
     print("em_resultado_NRE['phis'] =", em_resultado_NRE["phi1"], em_resultado_NRE["phi2"], em_resultado_NRE["phi3"])
 

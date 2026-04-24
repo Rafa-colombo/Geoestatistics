@@ -6,35 +6,15 @@ import util
 # Ambas funções são bem semelhantes, mudando apenas a forma de atualização de phi3 (Fisher Scoring isolado vs Newton-Raphson exato).
 
 # =====================================================================
-# 3. ALGORITMO EM (t-Student Espacial)
+# ALGORITMO EM (t-Student Espacial)
 # =====================================================================
-
-import numpy as np
-
-def standard_values_em(Y, k, gl, phi1=None, phi2=None, phi3=None):
-    """
-    Executa a otimização EM. Parâmetros dinâmicos são calculados com base em Y.
-    """
-    # 1. Trata os parâmetros guiados por dados
-    if phi1 is None:
-        phi1 = np.mean(Y)  # Exemplo: usando a média como centro inicial
-        
-    if phi2 is None:
-        phi2 = np.var(Y)   # Exemplo: usando a variância global
-        
-    if phi3 is None:
-        # Se for um parâmetro de alcance (range), pode ser uma fração do tamanho do grid
-        phi3 = np.max(Y) - np.min(Y) 
-        
-    return phi1, phi2, phi3
-    
-    # ... resto do código ...
 
 def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None, max_iter=100, tol=5e-4, gl_optimize=False):
     """
     Estimação de parâmetros espaciais robustos (t-Student) via Algoritmo EM.
     Passo Fischer Scoring para atualização de phi1 e phi2, e Newton 1D para phi3. (Utização de dK penas) -> Para NR exato, seria necessário dKK na aplicação.
     """
+
     # Desempacotando de acordo com parametros fornecidos -> tratamento Overloading manual
     if (theta_init is not None) and len(theta_init) > 3: # Se vetor theta_init for fornecido e tiver mais de 3 elementos, assume que os últimos 3 são phi1, phi2 e phi3, e o restante é beta
         beta = np.array(theta_init[:-3]).reshape(-1, 1)
@@ -42,16 +22,17 @@ def fit_tstudent_fisher(X, Y, gr, H, k=0.5, gl=4, theta_init=None, beta_ols=None
         phi1, phi2, phi3 = theta_init[-3:]
         util.plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k) # Gráfico para validar e atualizar chutes iniciais
         if (input("Deseja trocar os chutes iniciais? (0/1): ") == '1'):
-            phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial, phi1, phi2, phi3, k, gl)
+            phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial, phi1, phi2, phi3, k, gl, plot_curves=True)
         print(f"[theta_init] | beta = {beta.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
-    elif beta_ols is not None: # Caso contrário, usa chutes padrão para phi's e beta ols normal
+    elif beta_ols is not None: # Caso contrário, plota grafico de pontos para chutes iniciais phi's e beta ols normal
         beta = np.array(beta_ols.flatten()).reshape(-1, 1)  # Beta_ols
         r_inicial = Y - X @ beta
-        phi1, phi2, phi3 = standard_values_em(Y, k, gl)
-        phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial, phi1, phi2, phi3, k, gl) # Gráfico para validar e atualizar chutes iniciais
+        util.plot_semivariogram_curves(H, r_inicial, plot_curves=False) # Gráfico para validar e atualizar chutes iniciais
+        print("\nGráfico de semivariograma empírico gerado. Ajuste os parâmetros para visualizar as curvas teóricas.")
+        phi1, phi2, phi3, k, gl = util.update_values(H, r_inicial)
         print(f"[beta_ols] | beta = {beta.flatten()}, phi1 = {phi1:.4f}, phi2 = {phi2:.4f}, phi3 = {phi3:.4f}")
     else:
-        raise ValueError("Parâmetros insuficientes. Forneça theta_init completo ou beta_ols para chutes automáticos.")
+        raise ValueError("Parâmetros insuficientes. Forneça theta_init completo ou beta_ols.")
 
     n = len(Y) # Tamanho da amostra
     I = np.eye(n) # Matriz identidade para construção de Sigma e derivadas

@@ -102,37 +102,42 @@ def dKK(H, phi3, k):
     return res
     
 
-def update_values(H, r_inicial, phi1, phi2, phi3, k, gl):
+def update_values(H, r_inicial, phi1=None, phi2=None, phi3=None, k=None, gl=None):
     """
     Funções de auteração de valores baseado no plot do gráfico.
     """
+    
     while True:
-        
-        print("\n--- AVALIAÇÃO VISUAL ---")
-        print(f"1. phi1 (Nugget) = {phi1:.4f}")
-        print(f"2. phi2 (Sill)   = {phi2:.4f}")
-        print(f"3. phi3 (Range)  = {phi3:.4f}")
-        print(f"4. Kappa         = {k:.4f}")
-        print(f"5. Graus de Liberdade = {gl:.4f}")
-        
-        resp = input("\nDeseja testar novos valores no gráfico? (0/1): ")
-        if resp == '0':
+        if phi1 is not None and phi2 is not None and phi3 is not None and k is not None and gl is not None:
+            resp = input("\nDeseja testar novos valores no gráfico? (0/1): ")
+        else:
+            print("\nPor favor, insira os valores para phi1, phi2, phi3, k e gl.")
+            resp = '1' # Força a entrada de parâmetros
+
+        if resp == '0' and phi1 is not None and phi2 is not None and phi3 is not None and k is not None and gl is not None:
             plt.close('all')
             print("\nProsseguindo com a otimização...\n")
             return phi1, phi2, phi3, k, gl
         elif resp == '1':
             try:
-                phi1 = float(input("Novo valor para Phi1 (Nugget): "))
-                phi2 = float(input("Novo valor para Phi2 (Sill): "))
-                phi3 = float(input("Novo valor para Phi3 (Range): "))
-                k = float(input("Novo valor para Kappa: "))
-                gl = float(input("Novo valor para Graus de Liberdade: "))
+                phi1 = float(input("Valor para Phi1 (Nugget): "))
+                phi2 = float(input("Valor para Phi2 (Sill): "))
+                phi3 = float(input("Valor para Phi3 (Range): "))
+                k = float(input("Valor para Kappa: "))
+                gl = float(input("Valor para Graus de Liberdade: "))
                 plt.close('all') 
-                plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k)
+                plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k, plot_curves=True)
+
+                print("\n--- AVALIAÇÃO VISUAL ---")
+                print(f"1. phi1 (Nugget) = {phi1:.4f}")
+                print(f"2. phi2 (Sill)   = {phi2:.4f}")
+                print(f"3. phi3 (Range)  = {phi3:.4f}")
+                print(f"4. Kappa         = {k:.4f}")
+                print(f"5. Graus de Liberdade = {gl:.4f}")
             except ValueError:
                 print("Entrada inválida! Digite apenas números.")
    
-def plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k):
+def plot_semivariogram_curves(H, r_inicial, phi1=None, phi2=None, phi3=None, k=None, plot_curves=True):
     """Gera o Semivariograma Empírico vs Teórico para avaliar os chutes."""
 
     dist_flat = H.flatten()
@@ -158,21 +163,25 @@ def plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k):
     # 2. Criar Curva Teórica
     h_teorico = np.linspace(0, np.max(H), 100) 
 
-    # --- Modelo Matérn ---
-    correl_teorica_matern = matern_correlation(h_teorico, phi3, k)
-    variograma_matern = phi1 + phi2 * (1 - correl_teorica_matern) # Pagina 14, item c) Modelo da familia Matérn y(h)
-    
-    # --- Modelo Exponencial ---
-    correl_teorica_exponencial = exponential_correlation(h_teorico, phi3)
-    variograma_exponencial = phi1 + phi2 * (1 - correl_teorica_exponencial) # Pagina 13, item a) y(h)
-    
-    # --- Modelo Gaussiano ---
-    correl_teorica_gaussiana = gaussian_correlation(h_teorico, phi3)
-    variograma_gaussiana = phi1 + phi2 * (1 - correl_teorica_gaussiana) # Pagina 13, item b) y(h)
+    if plot_curves:
+        # --- Modelo Matérn ---
+        correl_teorica_matern = matern_correlation(h_teorico, phi3, k)
+        variograma_matern = phi1 + phi2 * (1 - correl_teorica_matern) # Pagina 14, item c) Modelo da familia Matérn y(h)
+        
+        # --- Modelo Exponencial ---
+        correl_teorica_exponencial = exponential_correlation(h_teorico, phi3)
+        variograma_exponencial = phi1 + phi2 * (1 - correl_teorica_exponencial) # Pagina 13, item a) y(h)
+        
+        # --- Modelo Gaussiano ---
+        correl_teorica_gaussiana = gaussian_correlation(h_teorico, phi3)
+        variograma_gaussiana = phi1 + phi2 * (1 - correl_teorica_gaussiana) # Pagina 13, item b) y(h)
 
     # 3. Plotagem em painel (2x2)
     fig, axs = plt.subplots(2, 2, figsize=(16, 10))
-    fig.suptitle(f"Comparação de Modelos Teóricos (φ1={phi1}, φ2={phi2}, φ3={phi3})", fontsize=15)
+    if plot_curves:
+        fig.suptitle(f"Comparação de Modelos Teóricos (φ1={phi1}, φ2={phi2}, φ3={phi3})", fontsize=15)
+    else:
+        fig.suptitle("Semivariograma Empírico", fontsize=15)
 
     # --- Configuração base comum para todos os 4 subgráficos ---
     for ax in axs.flat:
@@ -180,39 +189,51 @@ def plot_semivariogram_curves(H, r_inicial, phi1, phi2, phi3, k):
         ax.scatter(dist_flat, variograma_exp, alpha=0.1, color='gray', label='Dados (Pares)')
         ax.scatter(dist_medias, gama_medias, color='black', s=50, zorder=3, label='Empírico (Médias)')
         # Plot do patamar
-        ax.axhline(y=phi1+phi2, color='purple', linestyle=':', alpha=0.6, label=f'Patamar')
+        if plot_curves:
+            ax.axhline(y=phi1+phi2, color='purple', linestyle=':', alpha=0.6, label=f'Patamar')
         
         # Configurações de eixos e grid
         ax.set_xlabel("Distância (h)")
         ax.set_ylabel("Semivariância γ(h)")
-        ax.set_ylim(0, (phi1 + phi2) * 1.3)
+        if plot_curves:
+            ax.set_ylim(0, (phi1 + phi2) * 1.3)
         ax.grid(True, alpha=0.3)
 
-    # Gráfico 1: Exponencial (Top Left -> axs[0, 0])
-    axs[0, 0].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
-    axs[0, 0].set_title("Modelo Exponencial")
-    axs[0, 0].legend()
+    if plot_curves:
+        # Gráfico 1: Exponencial (Top Left -> axs[0, 0])
+        axs[0, 0].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
+        axs[0, 0].set_title("Modelo Exponencial")
+        axs[0, 0].legend()
 
-    # Gráfico 2: Gaussiano (Top Right -> axs[0, 1])
-    axs[0, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
-    axs[0, 1].set_title("Modelo Gaussiano")
-    axs[0, 1].legend()
+        # Gráfico 2: Gaussiano (Top Right -> axs[0, 1])
+        axs[0, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
+        axs[0, 1].set_title("Modelo Gaussiano")
+        axs[0, 1].legend()
 
-    # Gráfico 3: Matérn (Bottom Left -> axs[1, 0])
-    axs[1, 0].plot(h_teorico, variograma_matern, color='red', lw=2.5, label=f'Matérn (k={k})')
-    axs[1, 0].set_title("Modelo Matérn")
-    axs[1, 0].legend()
+        # Gráfico 3: Matérn (Bottom Left -> axs[1, 0])
+        axs[1, 0].plot(h_teorico, variograma_matern, color='red', lw=2.5, label=f'Matérn (k={k})')
+        axs[1, 0].set_title("Modelo Matérn")
+        axs[1, 0].legend()
 
-    # Gráfico 4: Todos os modelos juntos (Bottom Right -> axs[1, 1])
-    axs[1, 1].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
-    axs[1, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
-    axs[1, 1].plot(h_teorico, variograma_matern, color='red', lw=2.5, label='Matérn')
-    axs[1, 1].set_title("Comparação Conjunta")
-    axs[1, 1].legend()
+        # Gráfico 4: Todos os modelos juntos (Bottom Right -> axs[1, 1])
+        axs[1, 1].plot(h_teorico, variograma_exponencial, color='blue', lw=2, linestyle='--', label='Exponencial')
+        axs[1, 1].plot(h_teorico, variograma_gaussiana, color='green', lw=2, linestyle='-.', label='Gaussiano')
+        axs[1, 1].plot(h_teorico, variograma_matern, color='red', lw=2.5, label='Matérn')
+        axs[1, 1].set_title("Comparação Conjunta")
+        axs[1, 1].legend()
+    else:
+        # Set titles for empirical only
+        axs[0, 0].set_title("Empirical Semivariogram")
+        axs[0, 1].set_title("Empirical Semivariogram")
+        axs[1, 0].set_title("Empirical Semivariogram")
+        axs[1, 1].set_title("Empirical Semivariogram")
+        for ax in axs.flat:
+            ax.legend()
 
     # Ajusta o layout para que os títulos e legendas não fiquem sobrepostos
     plt.tight_layout()
     plt.show()
+        
 
 def plot_residuals(r_inicial, r_final, r_decorr, gr):
     """ VISUALIZAÇÃO ESPACIAL COMPARATIVA DOS RESÍDUOS """
@@ -382,10 +403,7 @@ def interactive_stats_view(Y, X, em_resultados, r_inicial, H, gr, k):
         L = la.cholesky(Sigma_final, lower=True)
         r_decorrelacionado = la.solve(L, r_final) # Remover o efeito da escala ou da variância de uma única variável para compará-la, o Escore-Z
         
-        plot_semivariogram_curves(
-            H, r_final, 
-            em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k
-        )
+        plot_semivariogram_curves(H, r_final, em_resultados["phi1"], em_resultados["phi2"], em_resultados["phi3"], k, plot_curves=True)
         
         plot_residuals(r_inicial, r_final, r_decorrelacionado, gr)
         
