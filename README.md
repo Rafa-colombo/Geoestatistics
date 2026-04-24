@@ -10,7 +10,7 @@
 ## 📖 Sobre o Projeto
 Este projeto de pesquisa visa o desenvolvimento e a consolidação de técnicas avançadas de Geoestatística de forma nativa na linguagem de programação Python. 
 
-A iniciativa central consiste em traduzir, otimizar e organizar algoritmos geoestatísticos complexos — originados de um trabalho de tese de doutorado — transformando-os em uma nova biblioteca de código aberto. O objetivo final é criar uma ferramenta robusta, eficiente e acessível para a análise e simulação de dados espaciais, preenchendo lacunas no ecossistema Python e contribuindo diretamente para pesquisas em geologia, agronomia, ciências ambientais e engenharias.
+A iniciativa central consiste em traduzir, otimizar e organizar algoritmos geoestatísticos complexos, originados de um trabalho de tese de doutorado da **Prof. Dr. ROSANGELA APARECIDA BOTINHA ASSUMPÇÃO**, transformando-os em uma nova biblioteca de código aberto. O objetivo final é criar uma ferramenta robusta, eficiente e acessível para a análise e simulação de dados espaciais, preenchendo lacunas no ecossistema Python e contribuindo diretamente para pesquisas em geologia, agronomia, ciências ambientais e engenharias.
 
 ---
 
@@ -28,18 +28,57 @@ A construção desta biblioteca foca na precisão estatística e na otimização
 ## 🛠️ Arquitetura e Tecnologias
 O ecossistema da biblioteca está sendo desenhado para integração perfeita com as ferramentas de Data Science já consolidadas:
 * **Linguagem Principal:** Python.
-* **Validação Cruzada:** Utilização de scripts em R para verificação de baseline e garantia da precisão matemática dos resultados gerados em Python.
+* **Validação Cruzada:** Utilização de scripts para verificação de baseline e garantia da precisão matemática dos resultados gerados em Python.
 * **Computação Científica:** Dependência pesada de bibliotecas base como `NumPy` e `SciPy` para garantir a performance nos cálculos de matrizes de covariância.
 
 ---
 
-## 🚀 Como Utilizar (Em Breve)
-No momento, o acesso ao código fonte principal e a documentação da API estão restritos aos desenvolvedores e pesquisadores envolvidos para garantir a integridade dos testes de validação. 
+## ✅ Funcionalidades Implementadas
 
-Assim que a versão `Alpha` for estabilizada, atualizaremos esta seção com:
-1. Instruções de instalação via gerenciadores de pacote (ex: `pip install nome-da-lib`).
-2. Documentação oficial da API.
-3. Notebooks de exemplo (`.ipynb`) aplicando a biblioteca em *datasets* reais de ciências ambientais.
+- **Algoritmo EM para t-Student Espacial**: Implementado em `EM_Matern.py` com duas variantes:
+  - `fit_tstudent_fisher`: Usa Fisher Scoring para phi1 e phi2, e Newton 1D para phi3.
+  - `fit_tstudent_exact_nr`: Usa Fisher Scoring para phi1 e phi2, e Newton-Raphson exato para phi3.
+- **Funções de Correlação Matérn**: Em `util.py`, incluindo derivadas para otimização.
+- **Plotagem de Semivariogramas**: Função `plot_semivariogram_curves` em `util.py` para visualizar empírico vs. teórico (Exponencial, Gaussiano, Matérn).
+- **Interação para Ajuste de Parâmetros**: `update_values` em `util.py` permite ao usuário visualizar o semivariograma empírico e inserir valores iniciais.
+- **Validação Cruzada**: Função `cross_validation` para LOOCV.
+- **Análise de Resíduos**: Plotagem espacial de resíduos marginais e decorrelacionados.
+
+---
+
+## ❌ Funcionalidades Não Implementadas
+
+- Modelos alternativos de correlação (além de Matérn, Exponencial, Gaussiano).
+- Otimização automática de graus de liberdade (gl) - atualmente opcional e experimental.
+- Interface gráfica completa ou integração com ferramentas externas (e.g., R's geoR).
+- Paralelização para grandes datasets.
+- Validação estatística avançada (e.g., testes de hipótese para modelos).
+- Interpolação e Krigagem avançada.
+
+---
+
+## 🔄 Fluxograma de Uso
+
+**Descrição do Fluxo:**
+1. **Carregar Dados**: Use `data_to_var` para processar o arquivo de dados e obter coordenadas, resposta, covariáveis, matriz de distâncias, etc.
+2. **Calcular Beta OLS ou Fornecer Theta Inicial**: Estimativa inicial de tendência via OLS ou fornecer vetor completo de parâmetros.
+3. **Plotar Semivariograma Empírico**: Visualize os dados sem curvas teóricas para avaliar a estrutura espacial.
+4. **Executar EM**: Roda o algoritmo de maximização para estimar parâmetros finais, com possibilidade de ajuste interativo.
+5. **Plotar Resultados e Validar**: Visualize semivariogramas teóricos, resíduos espaciais e realize validação cruzada.
+6. **Análise Final**: Interprete os resultados.
+
+---
+
+## 🚀 Como Utilizar
+
+O código fonte está disponível neste repositório GitHub para acesso aberto e colaboração. No entanto, a biblioteca ainda não foi completamente validada e testada em cenários de produção. Use com cautela para fins de pesquisa e desenvolvimento.
+
+Para começar:
+1. Clone o repositório: `git clone https://github.com/seu-usuario/geoestatistica-python.git`
+2. Instale as dependências: `pip install -r requirements.txt`
+3. Execute os scripts de exemplo em `Geoestatistics/`, como `otimizacao_rafa.py`.
+
+**Nota:** Esta é uma versão em desenvolvimento. Contribuições e testes são bem-vindos, mas a precisão dos resultados não está garantida.
 
 ---
 <div align="center">
